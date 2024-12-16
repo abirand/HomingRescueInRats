@@ -1785,25 +1785,25 @@ void DrawSummaryGraph(GLWindow *glw, float tx, float ty)
     // Draw graph here from buckets
     glBegin(GL_LINES);
     
-    // gcc in niche; drive; red
+    // gcc
     glColor3ub(255,   0,   0);
     for(i=1; i<nb; i++) {
       glVertex2d((((double)(i-1))/(nb-1))*Width*Scale, buckets[0][i-1]);
       glVertex2d((((double)(i))/(nb-1))*Width*Scale,   buckets[0][i]);
     }
-    // amk; resis; Purple
+    // amk
     glColor3ub(250, 250, 250);
     for(i=1; i<nb; i++) {
       glVertex2d((((double)(i-1))/(nb-1))*Width*Scale, buckets[1][i-1]);
       glVertex2d((((double)(i))/(nb-1))*Width*Scale,   buckets[1][i]);
     }
-    // amc; fertility; blue
+    // amc
     glColor3ub(100, 100, 100);
     for(i=1; i<nb; i++) {
       glVertex2d((((double)(i-1))/(nb-1))*Width*Scale, buckets[2][i-1]);
       glVertex2d((((double)(i))/(nb-1))*Width*Scale,   buckets[2][i]);
     }
-    // species fitness
+    // 
     glColor3ub(255,   0,   0);
     for(i=1; i<nb; i++) {
       glVertex2d((((double)(i-1))/(nb-1))*Width*Scale, buckets[4][i-1]);
@@ -2030,7 +2030,7 @@ void DrawGenotypePop(GLWindow *glw, float tx, float ty)
     glEnd();
     // Labels for the summary graph
     i = -40;
-
+    /*
     glColor3ub(200, 200, 200); glRasterPos2f(i+=40, 165);  printGLf(glw->font,"f(w)");
     glColor3ub(255,   0,   0); glRasterPos2f(i+=45, 165);  printGLf(glw->font,"f(dr)");
     glColor3ub(186,  85, 211); glRasterPos2f(i+=50, 165);  printGLf(glw->font,"f(r1)");
@@ -2039,7 +2039,16 @@ void DrawGenotypePop(GLWindow *glw, float tx, float ty)
     glColor3ub(200,   0,   0); glRasterPos2f(i+=63, 165);  printGLf(glw->font,"m(dr)");
     glColor3ub(138,  43, 226); glRasterPos2f(i+=64, 165);  printGLf(glw->font,"m(r1)");
     glColor3ub(  0, 100,   0); glRasterPos2f(i+=65, 165);  printGLf(glw->font,"m(r2)");
-    
+    */
+    glColor3ub(200, 200, 200); glRasterPos2f(i+=40, 165);  printGLf(glw->font,"f(w)");     //0
+    glColor3ub(255,   0,   0); glRasterPos2f(i+=45, 165);  printGLf(glw->font,"f(dr)-f");  //1
+    glColor3ub(186,  85, 211); glRasterPos2f(i+=50, 165);  printGLf(glw->font,"f(r1)");    //2
+    glColor3ub(  0, 150,   0); glRasterPos2f(i+=55, 165);  printGLf(glw->font,"f(r2)-if"); //3
+    glColor3ub(150, 150, 150); glRasterPos2f(i+=62, 165);  printGLf(glw->font,"m(w)");     //4
+    glColor3ub(200,   0,   0); glRasterPos2f(i+=63, 165);  printGLf(glw->font,"m(dr)");    //5
+    glColor3ub(138,  43, 226); glRasterPos2f(i+=64, 165);  printGLf(glw->font,"m(r1)");    //6
+    glColor3ub(  0, 100,   0); glRasterPos2f(i+=65, 165);  printGLf(glw->font,"r2");       //7
+      
   } else {
     // Initialize buckets
     nb = ((200<nGen)?(200):(nGen));

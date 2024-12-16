@@ -113,6 +113,25 @@
 #define _HOMING_B                 0
 #define _HOMING_C                 0
 //--------------------------------------------------------------------------
+// The drive is inserted in haploinsufficient viability gene cis-target,
+// generating a loss-of-function mutation but has rescue
+// if homer has two linked copies of the drive, turn on _EXP_MALE_STERILITY below which makes MALES with 2 copies sterile
+// in this model framework, basically and male with allele '2' are sterile
+// because they are tightly linked
+#define _HOMER                    0
+//--------------------------------------------------------------------------
+// The drive is inserted in haplosufficient female fertility gene as the cis-target,
+// generating a loss-of-function mutation but has rescue
+#define _HOMER_HS                 0
+// boolean to control the additional code for exposure to additional env. cue (antibiotic?) and _HOMER_HS
+// once 'exposed' the 'rescue' component of the drive is lost
+// homozygous drive carrying females are sterile
+#define _EXPOSURE                 0
+// gene drive frequency, after which the exposure is initiated
+#define _ExposureFrequency        0.94
+// exposure probability of an individual
+#define _ExposureProbability      0.99
+//--------------------------------------------------------------------------
 // The drive is inserted in haploinsufficient viability gene, generating a loss-of-function
 // mutation but has rescue also targets a distal gene (trans-target) which are:
 // if A   (female (AND male) knockout): target is (haplosufficient)     FEMALE fertility

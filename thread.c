@@ -54,6 +54,9 @@ extern          double          Xi[];
 // The current and total generation numbers
 extern          u64b            Gen;
 extern          u64b            NGen;
+#if _EXPOSURE
+extern          u64b            gen_exp;
+#endif
 extern          int             OffspringPopSize;
 extern          int             Mortality;
 extern          int             SinglePaternity;
@@ -1300,6 +1303,7 @@ static void Mate(pThreadData td, pIndividual f, pIndividual m, pPatch p)
     // the following happens in the approaches
     // alleles are 1: wildtype, 2: drive, 3: functional resistant, 4: nonfunctional resistant
     // in _HOMING:  the drive is inserted in fertility/viability locus and is happlosufficient
+    // in _HOMER:   the drive is inserted in VIABILITY locus and is happloINsufficient
     // in _HOMERKO: the drive is inserted in VIABILITY locus and is happloINsufficient
     // in _HOMERKO there is additional knockout in females (or both sexes) of a distal gene
     // if it has the drive (the allele on the other chr should be wildtype (no homing if functional resistant because already cut))
@@ -1329,6 +1333,7 @@ static void Mate(pThreadData td, pIndividual f, pIndividual m, pPatch p)
     // the following happens in the approaches
     // alleles are 1: wildtype, 2: drive, 3: functional resistant, 4: nonfunctional resistant
     // in _HOMING:  the drive is inserted in fertility/viability locus and is happlosufficient
+    // in _HOMER:   the drive is inserted in VIABILITY locus and is happloINsufficient
     // in _HOMERKO: the drive is inserted in VIABILITY locus and is happloINsufficient
     // in _HOMERKO there is additional knockout in females (or both sexes) of a distal gene
     // if it has the drive (the allele on the other chr should be wildtype (no homing if functional resistant because already cut))
@@ -1354,6 +1359,65 @@ static void Mate(pThreadData td, pIndividual f, pIndividual m, pPatch p)
       }
     }
 
+      
+#if _HOMER_HS
+#if _EXPOSURE
+    // the drive allele has changed from 2 to 5, which has lost the rescue, but still "homing"
+    if( gen_exp > 0 && Gen >= gen_exp ){
+      // get female germline
+      if( (*(f->f0) == 5 && *(f->f1) == 1) || (*(f->f0) == 1 && *(f->f1) == 5) ){
+        fgerm = GetFemaleGermLine();
+        //if( Gen == 122 ) { printf("female germ: %llf (%llu, %llu)\n", fgerm, *(f->f0), *(f->f1)); }
+        // prolactin alleles are 1: wildtype, 2: drive, 3: functional resistant, 4: nonfunctional resistant, 5: drive withour rescue after exposure
+        // FEMALES f1
+        if( ((int)(fgerm)) == 0 ){
+          for(l=0; l<_Lf; l++) SetLocus(i->f1, l, 5, 3);
+        }
+        if( ((int)(fgerm)) == 1 ){
+          for(l=0; l<_Lf; l++) SetLocus(i->f1, l, 4, 3);
+        }
+        if( ((int)(fgerm)) == 2 ){
+          // never this in females if pC = 1
+          for(l=0; l<_Lf; l++) SetLocus(i->f1, l, 1, 3);
+        }
+        if( ((int)(fgerm)) == 3 ){
+          // never this in females if pL = 1
+          for(l=0; l<_Lf; l++) SetLocus(i->f1, l, 3, 3);
+        }
+      }
+     
+      // the following happens in the approaches
+      // alleles are 1: wildtype, 2: drive, 3: functional resistant, 4: nonfunctional resistant
+      // in _HOMING:  the drive is inserted in fertility/viability locus and is happlosufficient
+      // in _HOMER:   the drive is inserted in VIABILITY locus and is happloINsufficient
+      // in _HOMERKO: the drive is inserted in VIABILITY locus and is happloINsufficient
+      // in _HOMERKO there is additional knockout in females (or both sexes) of a distal gene
+      // if it has the drive (the allele on the other chr should be wildtype (no homing if functional resistant because already cut))
+      // has to be heterozygous otherwise regular transmission
+      // the following "homing" happens in all three approaches
+      if( (*(m->f0) == 5 && *(m->f1) == 1) || (*(m->f0) == 1 && *(m->f1) == 5) ){
+        mgerm = GetMaleGermLine();
+        //if( Gen == 122 ) { printf("male germ: %llf (%llu, %llu)\n", mgerm, *(m->f0), *(m->f1)); }
+        // prolactin alleles are 1: wildtype, 2: drive, 3: functional resistant, 4: nonfunctional resistant, 5: drive withour rescue after exposure
+        // MALES f0
+        if( ((int)(mgerm)) == 0 ){
+          for(l=0; l<_Lf; l++) SetLocus(i->f0, l, 5, 3);
+        }
+        if( ((int)(mgerm)) == 1 ){
+          for(l=0; l<_Lf; l++) SetLocus(i->f0, l, 4, 3);
+        }
+        if( ((int)(mgerm)) == 2 ){
+          for(l=0; l<_Lf; l++) SetLocus(i->f0, l, 1, 3);
+        }
+        if( ((int)(mgerm)) == 3 ){
+          // never this in males if pL = 1
+          for(l=0; l<_Lf; l++) SetLocus(i->f0, l, 3, 3);
+        }
+      }
+    }
+#endif
+#endif
+      
     // ***************** knockout in distal loci
     // m locus alleles are 0: nonfunctional, 1: wildtype (_HOMERKO)
     // after the offspring is produced, knockout the genes
@@ -1396,7 +1460,7 @@ static void Mate(pThreadData td, pIndividual f, pIndividual m, pPatch p)
 #endif
     
     // ***************** viability check both HomeR and HomeRKO
-#if _HOMERKO_A || _HOMERKO_B || _HOMERKO_C
+#if _HOMERKO_A || _HOMERKO_B || _HOMERKO_C || _HOMER
     // // haploinsufficient: check for viability of offspring in 'f' locus
     // alleles are 1: wildtype, 2: drive, 3: functional resistant, 4: nonfunctional resistant
     // one copy of '4' will make it inviable (allele '2' with drive also has 'rescue')
@@ -1514,6 +1578,7 @@ static void PolyMate(pThreadData td, pIndividual f, pIndividual m_one, pIndividu
     // the following happens in both the approaches (one and two)
     // alleles are 1: wildtype, 2: drive, 3: functional resistant, 4: nonfunctional resistant
     // in _HOMING: the drive is inserted in fertility locus and is happlosufficient
+    // in _HOMER:   the drive is inserted in VIABILITY locus and is happloINsufficient
     // in _HOMERKO: the drive is inserted in viability locus and is happloINsufficient
     // in _HOMERKO there is additional knockout in females (or both sexes) of a distal gene
     // if it has the drive (the allele on the other chr should be wildtype (no homing if functional resistant because already cut))
@@ -1542,6 +1607,7 @@ static void PolyMate(pThreadData td, pIndividual f, pIndividual m_one, pIndividu
     // the following happens in both the approaches (one and two)
     // alleles are 1: wildtype, 2: drive, 3: functional resistant, 4: nonfunctional resistant
     // in _HOMING: the drive is inserted in fertility locus and is happlosufficient
+    // in _HOMER:   the drive is inserted in VIABILITY locus and is happloINsufficient
     // in _HOMERKO: the drive is inserted in viability locus and is happloINsufficient
     // in _HOMERKO there is additional knockout in females (or both sexes) of a distal gene
     // if it has the drive (the allele on the other chr should be wildtype (no homing if functional resistant because already cut))
@@ -1566,6 +1632,65 @@ static void PolyMate(pThreadData td, pIndividual f, pIndividual m_one, pIndividu
       }
     }
 
+#if _HOMER_HS
+#if _EXPOSURE
+    // the drive allele has changed from 2 to 5, which has lost the rescue, but still "homing"
+    if( gen_exp > 0 && Gen >= gen_exp ){
+      // get female germline
+      if( (*(f->f0) == 5 && *(f->f1) == 1) || (*(f->f0) == 1 && *(f->f1) == 5) ){
+        fgerm = GetFemaleGermLine();
+        //if( Gen == 122 ) { printf("female germ: %llf (%llu, %llu)\n", fgerm, *(f->f0), *(f->f1)); }
+        // prolactin alleles are 1: wildtype, 2: drive, 3: functional resistant, 4: nonfunctional resistant, 5: drive withour rescue after exposure
+        // FEMALES f1
+        if( ((int)(fgerm)) == 0 ){
+          for(l=0; l<_Lf; l++) SetLocus(i->f1, l, 5, 3);
+        }
+        if( ((int)(fgerm)) == 1 ){
+          for(l=0; l<_Lf; l++) SetLocus(i->f1, l, 4, 3);
+        }
+        if( ((int)(fgerm)) == 2 ){
+          // never this in females if pC = 1
+          for(l=0; l<_Lf; l++) SetLocus(i->f1, l, 1, 3);
+        }
+        if( ((int)(fgerm)) == 3 ){
+          // never this in females if pL = 1
+          for(l=0; l<_Lf; l++) SetLocus(i->f1, l, 3, 3);
+        }
+      }
+     
+      // the following happens in the approaches
+      // alleles are 1: wildtype, 2: drive, 3: functional resistant, 4: nonfunctional resistant
+      // in _HOMING:  the drive is inserted in fertility/viability locus and is happlosufficient
+      // in _HOMER:   the drive is inserted in VIABILITY locus and is happloINsufficient
+      // in _HOMERKO: the drive is inserted in VIABILITY locus and is happloINsufficient
+      // in _HOMERKO there is additional knockout in females (or both sexes) of a distal gene
+      // if it has the drive (the allele on the other chr should be wildtype (no homing if functional resistant because already cut))
+      // has to be heterozygous otherwise regular transmission
+      // the following "homing" happens in all three approaches
+      if( (*(m->f0) == 5 && *(m->f1) == 1) || (*(m->f0) == 1 && *(m->f1) == 5) ){
+        mgerm = GetMaleGermLine();
+        //if( Gen == 122 ) { printf("male germ: %llf (%llu, %llu)\n", mgerm, *(m->f0), *(m->f1)); }
+        // prolactin alleles are 1: wildtype, 2: drive, 3: functional resistant, 4: nonfunctional resistant, 5: drive withour rescue after exposure
+        // MALES f0
+        if( ((int)(mgerm)) == 0 ){
+          for(l=0; l<_Lf; l++) SetLocus(i->f0, l, 5, 3);
+        }
+        if( ((int)(mgerm)) == 1 ){
+          for(l=0; l<_Lf; l++) SetLocus(i->f0, l, 4, 3);
+        }
+        if( ((int)(mgerm)) == 2 ){
+          for(l=0; l<_Lf; l++) SetLocus(i->f0, l, 1, 3);
+        }
+        if( ((int)(mgerm)) == 3 ){
+          // never this in males if pL = 1
+          for(l=0; l<_Lf; l++) SetLocus(i->f0, l, 3, 3);
+        }
+      }
+    }
+#endif
+#endif
+
+      
     // ***************** knockout in distal loci
     // m locus alleles are 0: nonfunctional, 1: wildtype (_HOMERKO)
     // after the offspring is produced, knockout the genes
@@ -1607,7 +1732,7 @@ static void PolyMate(pThreadData td, pIndividual f, pIndividual m_one, pIndividu
 #endif
         
     // ***************** viability check
-#if _HOMERKO_A || _HOMERKO_B || _HOMERKO_C
+#if _HOMERKO_A || _HOMERKO_B || _HOMERKO_C || _HOMER
     // haploinsufficient: check for viability of offspring in 'f' locus
     // alleles are 1: wildtype, 2: drive, 3: functional resistant, 4: nonfunctional resistant
     // one copy of '4' will make it inviable (allele '2' with drive also has 'rescue')
@@ -1694,6 +1819,47 @@ static void Survive(pThreadData td, pPatch p, pIndividual m)
   Disperse(td, i, p);
 }
 
+/*
+#if _EXPOSURE
+// survival of an individual
+static void Expose(pThreadData td, pPatch p, pIndividual m)
+{
+  ArbiterProgress();
+  pIndividual i;
+  u64b        c,l;
+  
+  // copy all details
+  i = GetNextIndividual(td);
+  for(l=0; l<T_LENGTH; l++){
+    i->d[l] = m->d[l];
+    //printf("%d before exposed\n",i->d[l]);
+  }
+  // f loci: cut out the rescue in Homer_HS so that drive carring individuals become haploinsufficient when 'exposed'
+  // alleles are 1: wildtype, 2: drive, 3: functional resistant, 4: nonfunctional resistant, 5: drive without rescue
+  if( *(m->f0) == 2 ){
+    for(c=0; c<_Lf; c++)
+        SetLocus(i->f0, c, 5, 3);
+  }
+  
+  if( *(m->f1) == 2 ){
+    for(c=0; c<_Lf; c++)
+        SetLocus(i->f1, c, 5, 3);
+  }
+
+  i->s = m->s;
+  i->age = (m->age+1); //increment age, here since copying to Next
+  SyncIndividual(td,i);
+  //sanity print
+  //for(l=0; l<T_LENGTH; l++){
+  //  printf("%d after exposed\n",i->d[l]);
+  //}
+  //printf("**copying ind in exposed - old ID: %d, new ID: %d, sex: %d, age: %d\n", m->id, i->id, i->s, i->age);
+
+  //printf("****adult disperses\n");
+  Disperse(td, i, p);
+}
+#endif
+*/
 
 #if _INOC
 // mates m and f, and there is fertility selection
@@ -1802,7 +1968,43 @@ void* THREAD(void *arg)
       }
     }
 #endif
-          
+    
+    //----------------
+#if _EXPOSURE
+    u64b        c,l;
+    for(i=0; i<WIDTH; i++){
+      //printf("\n");
+      for(j=0; j<HEIGHT; j++){
+        for(h=0, l=td.Current[i][j].ni; h<l; h++){          // loops through individuals in a patch
+          int exposureflag = 0;
+            double randomexp = 0.;                          // exposure probability
+            randomexp = U01(&R);
+            if( gen_exp > 0 && Gen == gen_exp && randomexp <= _ExposureProbability ){
+            if( *(td.Current[i][j].i[h]->f0) == 2 || *(td.Current[i][j].i[h]->f1) == 2 ){
+              exposureflag = 1;
+            }
+          }
+              
+          if( exposureflag == 1 ){
+            //printf("before exp: %d, %d, age: %d, ([%d, %d] %d/%d)\n", *(td.Current[i][j].i[h]->f0), *(td.Current[i][j].i[h]->f1), td.Current[i][j].i[h]->age, i, j, h+1, l);
+            if( *(td.Current[i][j].i[h]->f0) == 2 ){
+              for(c=0; c<_Lf; c++) SetLocus(td.Current[i][j].i[h]->f0, c, 5, 3);
+            }
+              
+            if( *(td.Current[i][j].i[h]->f1) == 2 ){
+              for(c=0; c<_Lf; c++) SetLocus(td.Current[i][j].i[h]->f1, c, 5, 3);
+            }
+
+              //Expose(&td,&td.Next[i][j],td.Current[i][j].i[h]);
+            //printf("after exp: %d, %d, age: %d, ([%d, %d] %d/%d)\n", *(td.Current[i][j].i[h]->f0), *(td.Current[i][j].i[h]->f1), td.Current[i][j].i[h]->age, i, j, h+1, l);
+          }
+        }
+      }
+    }
+#endif
+    //----------------
+    
+      
     OffspringPopSize = 0;
     Mortality = 0;
     SinglePaternity = 0;
@@ -1847,6 +2049,22 @@ void* THREAD(void *arg)
           if( *(female->m0) == 0 && *(female->m1) == 0 ) continue;
 #endif
 
+#if _HOMER_HS
+          // females are infertile if both copies are missing
+          if( *(female->f0) == 4 && *(female->f1) == 4 ) continue;
+#if _EXPOSURE
+          if( gen_exp > 0 && Gen >= gen_exp ){
+            if( ( *(female->f0) == 5 && *(female->f1) == 5  ) ||
+                ( *(female->f0) == 4 && *(female->f1) == 5  ) ||
+                ( *(female->f0) == 5 && *(female->f1) == 4  ) ){
+              continue;
+            }
+          }
+#endif
+#endif
+
+            
+            
           //printf("----choosing: %llu/%llu\n",*(female->f0),*(female->f1));
           matingfemale = td.Current[i][j].i[h];             // the female is fertile, find a mate:
           success = 0;
@@ -2378,11 +2596,36 @@ void* THREAD(void *arg)
           randomno = U01(&R);
           if( randomno < _SURVIVALPROBABILITY ) {
             //printf("survives: p(s): %lf, random: %lf\n",_SURVIVALPROBABILITY, randomno);
+/*
+#if _EXPOSURE
+            // if the individual is surviving, check if genotype has to be reset for removal of 'rescue'
+            // any individuals any '2' should be '5'
+            int exposureflag = 0;
+            if( gen_exp > 0 && Gen >= gen_exp ){
+              if( *(td.Current[i][j].i[h]->f0) == 2 || *(td.Current[i][j].i[h]->f1) == 2 ){
+                exposureflag = 1;
+              }
+            }
+            
+            if( exposureflag == 1 ){
+              Expose(&td,&td.Next[i][j],td.Current[i][j].i[h]);
+              //if( (*(td.Current[i][j].i[h]->f0) == 2 || *(td.Current[i][j].i[h]->f1) == 2 ) && gen_exp > 0 && Gen >= gen_exp ){ printf("exp: %d, %d, age: %d, ([%d, %d] %d/%d)\n", *(td.Current[i][j].i[h]->f0), *(td.Current[i][j].i[h]->f1), td.Current[i][j].i[h]->age, i, j, h+1, l);}
+            } else {
+              Survive(&td,&td.Next[i][j],td.Current[i][j].i[h]);
+                if( (*(td.Current[i][j].i[h]->f0) == 2 || *(td.Current[i][j].i[h]->f1) == 2 ) && gen_exp > 0 && Gen >= gen_exp ){ printf("surv: %d, %d, age: %d, ([%d, %d] %d/%d)\n", *(td.Current[i][j].i[h]->f0), *(td.Current[i][j].i[h]->f1), td.Current[i][j].i[h]->age, i, j, h+1, l);}
+            }
+          } else {
+            //printf("dies: p(s): %lf, random: %lf\n",_SURVIVALPROBABILITY, randomno);
+              //if( (*(td.Current[i][j].i[h]->f0) == 2 || *(td.Current[i][j].i[h]->f1) == 2 ) && gen_exp > 0 && Gen >= gen_exp ){ printf("dies: %d, %d, age: %d, ([%d, %d] %d/%d)\n", *(td.Current[i][j].i[h]->f0), *(td.Current[i][j].i[h]->f1), td.Current[i][j].i[h]->age, i, j, h+1, l);}
+            Mortality++;
+          }
+#else*/
             Survive(&td,&td.Next[i][j],td.Current[i][j].i[h]);
           } else {
             //printf("dies: p(s): %lf, random: %lf\n",_SURVIVALPROBABILITY, randomno);
             Mortality++;
           }
+//#endif
         }
       } // closes j loop (new)
     } //closes i loop (new)

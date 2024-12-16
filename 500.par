@@ -12,7 +12,7 @@
 #define _CPUS                     1
 
 // Seed for the random number generator, 0 -> seed based on time
-#define _RAND_SEED                0
+#define _RAND_SEED                222327//208695
 
 //****************************************
 // maximum age of an individual (think in mating cycles!) if generations are overlapping
@@ -75,7 +75,7 @@
 #define _FEMALEINOCULATION        1
 
 // default: pC(f) = 0.83
-#define _FEMALECUTTINGPROB        1.0
+#define _FEMALECUTTINGPROB        0.77
 
 // default: pN(f) = 0.2 (pHOMING = 1-pN=0.8)
 #define _FEMALENHEJPROB           0.20
@@ -84,7 +84,7 @@
 #define _FEMALELOFPROB            0.999
 
 // knockout probability of a distal gene, default: pK(f) = 0.83
-#define _FEMALEKNOCKOUT           1.0
+#define _FEMALEKNOCKOUT           1.00//0.77
 
 //------------------------------------------------------------------
 #define _MALEINOCULATION          0
@@ -277,4 +277,5 @@
 
 #endif
 
-//Actual Seed:           650743
+//Actual Seed:           222327
+

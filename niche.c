@@ -70,6 +70,15 @@ int         MultiplePaternity;
 int         MatingMotherwithDrive;
 int         MatingFatherwithDrive;
 
+#if _HOMER
+int         gen_n;
+int         gen_nf;
+int         gen_nn;
+#endif
+#if _EXPOSURE
+u64b        gen_exp; //exposure generation when drive frequency exceed _ExposureFrequency
+#endif
+
 // log files
 #if _SYS
 u64b        Sys_logs;
@@ -478,7 +487,7 @@ static void Init()
           for(c=0; c<_Lm; c++)    SetLocus((t+k)->m0, c, 1, 1);
           for(c=0; c<_Lm; c++)    SetLocus((t+k)->m1, c, 1, 1);
 #endif
-          // f locus alleles are 1: wildtype, 2: drive, 3: functional resistant, 4: nonfunctional resistant (_HOMING and _HOMERKO)
+          // f locus alleles are 1: wildtype, 2: drive, 3: functional resistant, 4: nonfunctional resistant (_HOMING, _HOMER and _HOMERKO)
           // it is prolactin wildtype for both approaches but used differently in the two approaches
           // HOMING:                        haplosufficient fertility gene, drive is embedded in this locus
           // HOMER & HOMERKO:   haploINsufficient viability gene, drive is embedded in this locus with rescue
@@ -770,6 +779,76 @@ static void LogSysDeme()
         //printf("here end?\n");
 #endif
           
+#if _HOMER
+        // f locus alleles are 1: wildtype, 2: drive, 3: functional resistant, 4: nonfunctional resistant (_HOMER)
+        //printf("*k:%d (%d, %d) pop: %d sex: %d\n", k, lat, lon, pop, p->i[k]->s);
+        //printf("%d\n", p->i[k]->s);
+        // if it has allele '2' it has drive
+        if( *(p->i[k]->f0) == 2 || *(p->i[k]->f1) == 2 ){
+            p->AllSpecies[1] = 1;
+            p->speciespops[1]++;
+            pop++;
+        } else if( *(p->i[k]->f0) == 3 || *(p->i[k]->f1) == 3 ){
+            p->AllSpecies[3] = 1;
+            p->speciespops[3]++;
+            pop++;
+        } else if( *(p->i[k]->f0) == 4 && *(p->i[k]->f1) == 4 ){
+            p->AllSpecies[4] = 1;
+            p->speciespops[4]++;
+            pop++;
+        }
+        //printf("here end?\n");
+#endif
+
+#if _HOMER_HS
+        // f locus alleles are 1: wildtype, 2: drive, 3: functional resistant, 4: nonfunctional resistant (_HOMER)
+        // if male
+        //printf("*k:%d (%d, %d) pop: %d sex: %d\n", k, lat, lon, pop, p->i[k]->s);
+        //printf("%d\n", p->i[k]->s);
+        if( p->i[k]->s == 0 ){
+          //printf("here1?\n");
+          // if it has allele '2' it has drive
+          if( (*(p->i[k]->f0) == 2 && *(p->i[k]->f1) == 1) || (*(p->i[k]->f0) == 1 && *(p->i[k]->f1) == 2) || (*(p->i[k]->f0) == 2 && *(p->i[k]->f1) == 2) ){
+            p->AllSpecies[5] = 1;
+            p->speciespops[5]++;
+            pop++;
+          } else if( *(p->i[k]->f0) == 1 && *(p->i[k]->f1) == 1 ){
+            p->AllSpecies[4] = 1;
+            p->speciespops[4]++;
+            pop++;
+          } else if( *(p->i[k]->f0) == 5 || *(p->i[k]->f1) == 5 ){
+            p->AllSpecies[7] = 1;
+            p->speciespops[7]++;
+            pop++;
+          } else {
+            p->AllSpecies[6] = 1;
+            p->speciespops[6]++;
+            pop++;
+          }
+        } else {
+          //printf("here2\n");
+          // if it has allele '2' it has drive
+          if( (*(p->i[k]->f0) == 2 && *(p->i[k]->f1) == 1) || (*(p->i[k]->f0) == 1 && *(p->i[k]->f1) == 2) || (*(p->i[k]->f0) == 2 && *(p->i[k]->f1) == 2) ){
+            p->AllSpecies[1] = 1;
+            p->speciespops[1]++;
+            pop++;
+          } else if( *(p->i[k]->f0) == 1 && *(p->i[k]->f1) == 1 ){
+            p->AllSpecies[0] = 1;
+            p->speciespops[0]++;
+            pop++;
+          } else if( *(p->i[k]->f0) == 5 || *(p->i[k]->f1) == 5 ){
+            p->AllSpecies[3] = 1;
+            p->speciespops[3]++;
+            pop++;
+          } else {
+            p->AllSpecies[2] = 1;
+            p->speciespops[2]++;
+            pop++;
+          }
+        }
+        //printf("here end?\n");
+#endif
+
           
 #if _HOMERKO_A || _HOMERKO_B || _HOMERKO_C
         // f locus alleles are 1: wildtype, 2: drive, 3: functional resistant, 4: nonfunctional resistant
@@ -895,7 +974,7 @@ static void LogSysDeme()
               //y2[l] += Y*Y;
             }
 
-#if _HOMING_A || _HOMING_B || _HOMING_C
+#if _HOMING_A || _HOMING_B || _HOMING_C || _HOMER || _HOMER_HS
             // f locus alleles are 1: wildtype, 2: drive, 3: functional resistant, 4: nonfunctional resistant
             // drive frequency
             if( *(p->i[k]->f0) == 2){
@@ -911,6 +990,15 @@ static void LogSysDeme()
             if( *(p->i[k]->f1) == 1){
               amc++;
             }
+#if _EXPOSURE
+            // no-rescue frequency
+            if( *(p->i[k]->f0) == 5 ){
+              amk++;
+            }
+            if( *(p->i[k]->f1) == 5 ){
+              amk++;
+            }
+#else
             // resistance frequency (but 3 is functional if _RESISTANCE)
             if( *(p->i[k]->f0) == 3){
               amk++;
@@ -925,6 +1013,7 @@ static void LogSysDeme()
             if( *(p->i[k]->f1) == 4){
               amk++;
             }
+#endif
 #endif
             
 #if _HOMERKO_A || _HOMERKO_B || _HOMERKO_C
@@ -1050,10 +1139,95 @@ static void LogSysDeme()
             }
 #endif
 
+
+#if _HOMER
+            // f locus alleles are 1: wildtype, 2: drive, 3: functional resistant, 4: nonfunctional resistant (_HOMING and _HOMER)
+            // if male
+            if( p->i[k]->s == 0 ){
+              // if it has allele '2' it has drive
+              if( (*(p->i[k]->f0) == 2 && *(p->i[k]->f1) == 1) || (*(p->i[k]->f0) == 1 && *(p->i[k]->f1) == 2) || (*(p->i[k]->f0) == 2 && *(p->i[k]->f1) == 2) ){
+                genotypepop[5]++; // drive
+              } else if( *(p->i[k]->f0) == 1 && *(p->i[k]->f1) == 1 ){
+                genotypepop[4]++; // wildtype
+              } else {
+                genotypepop[6]++; // others
+                // if( *(p->i[k]->f0) == 3 || *(p->i[k]->f1) == 3) printf("m:%llu/%llu\n", *(p->i[k]->f0), *(p->i[k]->f1));
+              }
+            } else {
+              // if female
+              if( (*(p->i[k]->f0) == 2 && *(p->i[k]->f1) == 1) || (*(p->i[k]->f0) == 1 && *(p->i[k]->f1) == 2) || (*(p->i[k]->f0) == 2 && *(p->i[k]->f1) == 2) ){
+                genotypepop[1]++; // drive
+              } else if( *(p->i[k]->f0) == 1 && *(p->i[k]->f1) == 1 ){
+                genotypepop[0]++; // wildtype
+              } else {
+                genotypepop[2]++; // others
+                // if( *(p->i[k]->f0) == 3 || *(p->i[k]->f1) == 3) printf("f:%llu/%llu\n", *(p->i[k]->f0), *(p->i[k]->f1));
+              }
+            }
+#endif
+
+              
+#if _HOMER_HS
+#if _EXPOSURE
+            // f locus alleles are 1: wildtype, 2: drive, 3: functional resistant, 4: nonfunctional resistant (_HOMING and _HOMER)
+            // if male
+            if( p->i[k]->s == 0 ){
+              // if it has allele '2' it has drive
+              if( (*(p->i[k]->f0) == 2 && *(p->i[k]->f1) == 1) || (*(p->i[k]->f0) == 1 && *(p->i[k]->f1) == 2) || (*(p->i[k]->f0) == 2 && *(p->i[k]->f1) == 2) ){
+                genotypepop[5]++; // drive
+              } else if( *(p->i[k]->f0) == 1 && *(p->i[k]->f1) == 1 ){
+                genotypepop[4]++; // wildtype
+              } else if( *(p->i[k]->f0) == 5 || *(p->i[k]->f1) == 5 ){
+                genotypepop[7]++; // no rescue
+              } else {
+                genotypepop[6]++; // others
+                // if( *(p->i[k]->f0) == 3 || *(p->i[k]->f1) == 3) printf("m:%llu/%llu\n", *(p->i[k]->f0), *(p->i[k]->f1));
+              }
+            } else {
+              // if female
+              if( (*(p->i[k]->f0) == 2 && *(p->i[k]->f1) == 1) || (*(p->i[k]->f0) == 1 && *(p->i[k]->f1) == 2) || (*(p->i[k]->f0) == 2 && *(p->i[k]->f1) == 2) ){
+                genotypepop[1]++; // drive
+              } else if( *(p->i[k]->f0) == 1 && *(p->i[k]->f1) == 1 ){
+                genotypepop[0]++; // wildtype
+              } else if( *(p->i[k]->f0) == 5 || *(p->i[k]->f1) == 5 ){
+                genotypepop[3]++; // no rescue
+              } else {
+                genotypepop[2]++; // others
+                // if( *(p->i[k]->f0) == 3 || *(p->i[k]->f1) == 3) printf("f:%llu/%llu\n", *(p->i[k]->f0), *(p->i[k]->f1));
+              }
+            }
+#else
+            // f locus alleles are 1: wildtype, 2: drive, 3: functional resistant, 4: nonfunctional resistant (_HOMING and _HOMER)
+            // if male
+            if( p->i[k]->s == 0 ){
+              // if it has allele '2' it has drive
+              if( (*(p->i[k]->f0) == 2 && *(p->i[k]->f1) == 1) || (*(p->i[k]->f0) == 1 && *(p->i[k]->f1) == 2) || (*(p->i[k]->f0) == 2 && *(p->i[k]->f1) == 2) ){
+                genotypepop[5]++; // drive
+              } else if( *(p->i[k]->f0) == 1 && *(p->i[k]->f1) == 1 ){
+                genotypepop[4]++; // wildtype
+              } else {
+                genotypepop[6]++; // others
+                // if( *(p->i[k]->f0) == 3 || *(p->i[k]->f1) == 3) printf("m:%llu/%llu\n", *(p->i[k]->f0), *(p->i[k]->f1));
+              }
+            } else {
+              // if female
+              if( (*(p->i[k]->f0) == 2 && *(p->i[k]->f1) == 1) || (*(p->i[k]->f0) == 1 && *(p->i[k]->f1) == 2) || (*(p->i[k]->f0) == 2 && *(p->i[k]->f1) == 2) ){
+                genotypepop[1]++; // drive
+              } else if( *(p->i[k]->f0) == 1 && *(p->i[k]->f1) == 1 ){
+                genotypepop[0]++; // wildtype
+              } else {
+                genotypepop[2]++; // others
+                // if( *(p->i[k]->f0) == 3 || *(p->i[k]->f1) == 3) printf("f:%llu/%llu\n", *(p->i[k]->f0), *(p->i[k]->f1));
+              }
+            }
+#endif
+#endif
+
+
 #if _HOMERKO_A || _HOMERKO_B || _HOMERKO_C
             // m locus alleles are 0: nonfunctional, 1: wildtype (_HOMERKO)
             // f locus alleles are 1: wildtype, 2: drive, 3: functional resistant, 4: nonfunctional resistant
-            
+            /*
             if( *(p->i[k]->f0) == 1 && *(p->i[k]->f1) == 1 ){
               if( p->i[k]->s == 1) genotypepop[0]++;   //wildtype at least fertile female
               if( p->i[k]->s == 0) genotypepop[4]++;
@@ -1066,6 +1240,26 @@ static void LogSysDeme()
             } else if( *(p->i[k]->f0) == 4 || *(p->i[k]->f1) == 4 ){ // if it has allele '4' it has r2
               if( p->i[k]->s == 1) genotypepop[3]++;   //r2
               if( p->i[k]->s == 0) genotypepop[7]++;
+            }
+            */
+              
+            if( *(p->i[k]->f0) == 1 && *(p->i[k]->f1) == 1 ){
+              if( p->i[k]->s == 1) genotypepop[0]++;   //wildtype at least fertile female
+              if( p->i[k]->s == 0) genotypepop[4]++;
+            } else if( *(p->i[k]->f0) == 2 || *(p->i[k]->f1) == 2 ){ // if it has allele '2' it has drive
+              if( p->i[k]->s == 1 ){ // drive and female
+                if( *(p->i[k]->m0) == 1 || *(p->i[k]->m1) == 1 ){
+                  genotypepop[1]++;  //drive and fertile female
+                } else {
+                  genotypepop[3]++;  //drive and infertile female
+                }
+              }
+              if( p->i[k]->s == 0) genotypepop[5]++;   //drive and fertile male
+            } else if( *(p->i[k]->f0) == 3 || *(p->i[k]->f1) == 3 ){ // if it has allele '3' it has r1
+              if( p->i[k]->s == 1) genotypepop[2]++;   //r1 female
+              if( p->i[k]->s == 0) genotypepop[6]++;   //r1 male
+            } else { // if it has allele '4' it has r2 both sexes
+              genotypepop[7]++;
             }
             
             /*
@@ -1155,6 +1349,23 @@ static void LogSysDeme()
     gcc            /= ((double)(2*i));
     amc            /= ((double)(2*i));
     amk            /= ((double)(2*i));
+
+#if _HOMER
+    if( gen_n == 0 && gcc >= 0.90 ){
+      gen_n = Gen;
+    }
+    if( gen_nf == 0 && gcc >= 0.95 ){
+      gen_nf = Gen;
+    }
+    if( gen_nn == 0 && gcc >= 0.99 ){
+      gen_nn = Gen;
+    }
+#endif
+#if _EXPOSURE
+      if( gen_exp == 0 && gcc >= _ExposureFrequency ){
+        gen_exp = Gen;
+      }
+#endif
       
     fprintf(Sysf, "%llu %llu %lf %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %lf %lf %d %d %d %d",
             Gen, i, gcc, max_gen, max_i, genotypepop[0], genotypepop[1], genotypepop[2], genotypepop[3], genotypepop[4], genotypepop[5], genotypepop[6], genotypepop[7], amc, amk, OffspringPopSize, Mortality, MultiplePaternity, SinglePaternity);
@@ -1302,6 +1513,14 @@ static void Cleanup()
   printf("   Mating mothers with drive: %d\n", MatingMotherwithDrive);
   printf("   Mating fathers with drive: %d\n", MatingFatherwithDrive);
       
+#if _HOMER
+  printf("   T(90):          %d\n",gen_n);
+  printf("   T(95):          %d\n",gen_nf);
+  printf("   T(99):          %d\n",gen_nn);
+#endif
+#if _EXPOSURE
+  printf("   T(exp):         %d\n",gen_exp);
+#endif
 #if _BENCHMARK
   printf("\n* Benchmark:\n   %lf Seconds spent processing %llu individuals.\n   %lf Seconds per million.\n",
           ProcessTime/1000000.,nProcessed,((double)ProcessTime)/nProcessed);
